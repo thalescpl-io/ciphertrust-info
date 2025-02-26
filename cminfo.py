@@ -341,7 +341,7 @@ def sort_response_keys(resp, collection, sort_field):
         return resp
 
 # CLI  ------------------------------------------------------------------------
-@click.version_option(version='1.2.0', prog_name='cminfo')
+@click.version_option(version='1.4.0', prog_name='cminfo')
 @click.group()
 @click.pass_context
 @click.option('-h', '--host', prompt=True, help='CipherTrust node FQDN or IP', default=DEFAULT_HOST, envvar='CM_HOST')
