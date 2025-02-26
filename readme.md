@@ -89,7 +89,7 @@ Options:
 For example, the command:
 
 ``` bash
-python .\cminfo-v1.3.py -h cm1.aperture.lab -u admin -d root -a root key list
+python .\cminfo.py -h cm1.aperture.lab -u admin -d root -a root key list
 ```
 
 This prompts only for the password since the other values were provided as parameters.
@@ -115,7 +115,7 @@ The same values can also be pulled from the shell environment if no .env file is
 #### Alarm List
 To list alarms, use the following command:
 ```bash
-Usage: cminfo-v1.3.py alarm list [OPTIONS]
+Usage: cminfo.py alarm list [OPTIONS]
 
 Options:
   -l, --limit TEXT                Maximum number of objects to show
@@ -133,7 +133,7 @@ This is a convenience function to download the ksctl tool package from the Ciphe
 **NOTE:** **cminfo** does not required ksctl to function.
 
 ```bash
-Usage: cminfo-v1.3.py download ksctl [OPTIONS]
+Usage: cminfo.py download ksctl [OPTIONS]
 
 Options:
   -h, --host TEXT  Download from this CipherTrust node
@@ -146,7 +146,7 @@ Options:
 #### Key Dates
 To list key dates, use the following command:
 ```bash
-Usage: cminfo-v1.3.py key dates [OPTIONS]
+Usage: cminfo.py key dates [OPTIONS]
 
 Options:
   -l, --limit TEXT                Maximum number of objects to show
@@ -160,7 +160,7 @@ Options:
 #### Key Labels
 Display all key labels currently applied to keys.
 ```bash
-Usage: cminfo-v1.3.py key labels [OPTIONS]
+Usage: cminfo.py key labels [OPTIONS]
 
 Options:
   -l, --limit TEXT  Maximum number of objects to show
@@ -172,7 +172,7 @@ Options:
 
 List all keys. Supports filtering by algorithm and state. Sorting is supported by column name.
 ```bash
-Usage: cminfo-v1.3.py key list [OPTIONS]
+Usage: cminfo.py key list [OPTIONS]
 
 Options:
   -l, --limit TEXT                Maximum number of objects to show
@@ -188,7 +188,7 @@ Options:
 
 Show all schedule configurations.
 ```bash
-Usage: cminfo-v1.3.py schedule list [OPTIONS]
+Usage: cminfo.py schedule list [OPTIONS]
 
 Options:
   -l, --limit TEXT                Maximum number of objects to show
@@ -201,7 +201,7 @@ Options:
 
 Show the state of all CipherTrust microservices.
 ```bash
-Usage: cminfo-v1.3.py service list [OPTIONS]
+Usage: cminfo.py service list [OPTIONS]
 
 Options:
   --help                          Show this message and exit.
@@ -209,11 +209,24 @@ Options:
 ![Alt text](./images/service-list.png)
 
 ### User
+#### User Inactive
+
+Show users not logged in for the past X days.
+```bash
+Usage: cminfo.py user inactive [OPTIONS]
+
+Options:
+  -l, --limit TEXT  Maximum number of objects to show
+  -d, --days TEXT   Consider inactive if not logged in during this window
+  --help            Show this message and exit.
+```
+![Alt text](./images/user-inactive.png)
+
 #### User Logins
 
 Show login information for each user.
 ```bash
-Usage: cminfo-v1.3.py user logins [OPTIONS]
+Usage: cminfo.py user logins [OPTIONS]
 
 Options:
   -l, --limit TEXT  Maximum number of objects to show

@@ -1,8 +1,9 @@
 import click
+import datetime
 import json
 import requests
 import urllib3
-from datetime import datetime
+#from datetime import datetime
 from dotenv import load_dotenv
 from rich.table import Table
 from rich.console import Console
@@ -114,7 +115,7 @@ def convert_datetime_fields(data, datetime_fields):
     for resource in data.get('resources', []):  # TODO: parameterize collection field
         for field in datetime_fields:
             if field in resource and resource[field] is not None:
-                dt = datetime.fromisoformat(resource[field].replace("Z", "+00:00"))
+                dt = datetime.datetime.fromisoformat(resource[field].replace("Z", "+00:00"))
                 resource[field] = dt.strftime("%Y-%m-%d %H:%M")
     return data
 
@@ -162,6 +163,42 @@ def download_file(url, location):
         print ("Something went wrong",err)
     except Exception as e:
         print("An error occured", e)
+
+def filter_by_date(response, days):
+    """
+    Filters resources in the response based on a date threshold.
+
+    Parameters:
+    response (dict): The dictionary containing resources to filter.
+    days (int): The number of days to use as a threshold for filtering.
+
+    Returns:
+    dict: A new dictionary containing only the resources that meet the date criteria.
+    """
+    # Calculate the target date by subtracting 'days' from the current date
+    target_date = datetime.datetime.now() - datetime.timedelta(days=days)
+    click.echo(click.style(f"Inactive since: {target_date.strftime("%Y-%m-%d %H:%M")}:", fg='yellow', bold=True))
+    filtered_resources = []
+    
+    for resource in response.get('resources', []):
+        last_login_str = resource.get('last_login')
+        if last_login_str is None:
+            # If last_login is None, include the resource
+            filtered_resources.append(resource)
+        else:
+            try:
+                last_login = datetime.datetime.strptime(last_login_str, "%Y-%m-%d %H:%M")
+                # Check if last_login is outside the target date range
+                if last_login <= target_date:
+                    filtered_resources.append(resource)
+            except ValueError as e:
+                print(f"Error parsing date: {e} for resource: {resource}")
+    
+    # Create a new response object with the filtered resources and maintain the original structure
+    new_response = response.copy()
+    new_response['resources'] = filtered_resources
+    
+    return new_response
 
 def flatten_entries(data, subfield):
     """
@@ -477,6 +514,30 @@ def labels(ctx, limit):
 @click.pass_context
 def user(ctx):
     pass
+
+# CLI:USER:INACTIVE
+@user.command()
+@click.pass_context
+@click.option('-l', '--limit', prompt='Query limit', help='Maximum number of objects to show', default='20', envvar='CM_LIMIT')
+@click.option('-d', '--days', prompt='Last login window in days', help='Consider inactive if not logged in during this window', default='30')
+def inactive(ctx, limit, days):
+    opts = dict([('limit', limit)])
+    query = build_query(opts)
+
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/usermgmt/users{query}')
+    print_totals(resp)
+
+    datetime_fields = ["created_at", "updated_at", "last_login", "last_failed_login_at", "password_changed_at"]
+    resp = convert_datetime_fields(resp, datetime_fields)
+
+    resp = filter_by_date(resp, int(days))
+
+    column_list = ["name", "user_id", "logins_count", "failed_logins_count", "last_login", "last_failed_login_at", "password_changed_at"]
+    column_color_map = {
+            'last_failed_login_at': 'red',
+            'password_changed_at': 'yellow'
+    }
+    print_table(column_list, resp, 'resources', None, column_color_map)
 
 # CLI:USER:LOGINS
 @user.command()
