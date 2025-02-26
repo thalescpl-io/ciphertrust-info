@@ -3,7 +3,6 @@ import datetime
 import json
 import requests
 import urllib3
-#from datetime import datetime
 from dotenv import load_dotenv
 from rich.table import Table
 from rich.console import Console
@@ -15,8 +14,7 @@ from tqdm import tqdm  # for file download progress bar
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-DEFAULT_HOST = 'cm1.aperture.lab'
-DEFAULT_PASSWORD = 'Thales123!'
+VERSION = '1.4.2'
 
 # FUNCTIONS  ------------------------------------------------------------------
 def authenticate(host, username, password, domain, authdomain):
@@ -341,12 +339,12 @@ def sort_response_keys(resp, collection, sort_field):
         return resp
 
 # CLI  ------------------------------------------------------------------------
-@click.version_option(version='1.4.1', prog_name='cminfo')
+@click.version_option(version=VERSION, prog_name='cminfo')
 @click.group()
 @click.pass_context
-@click.option('-h', '--host', prompt=True, help='CipherTrust node FQDN or IP', default=DEFAULT_HOST, envvar='CM_HOST')
+@click.option('-h', '--host', prompt=True, help='CipherTrust node FQDN or IP', envvar='CM_HOST')
 @click.option('-u', '--username', prompt=True, help='Username', default='admin', envvar='CM_USER')
-@click.option('-p', '--password', prompt=True, hide_input=True, help='Password', default=DEFAULT_PASSWORD, envvar='CM_PW')
+@click.option('-p', '--password', prompt=True, hide_input=True, help='Password', envvar='CM_PW')
 @click.option('-d', '--domain', prompt=True, help='Domain', default='root', envvar='CM_DOMAIN')
 @click.option('-a', '--authdomain', prompt=True, help='Authentication domain', default='root', envvar='CM_AUTHDOMAIN')
 @click.option('--debug', is_flag=True, default=False)
@@ -407,7 +405,7 @@ def download():
 
 # CLI:DOWNLOAD:KSCTL
 @download.command()
-@click.option('-h', '--host', prompt='Host name', help='Download from this CipherTrust node', default=DEFAULT_HOST, envvar='CM_HOST')
+@click.option('-h', '--host', prompt='Host name', help='Download from this CipherTrust node', envvar='CM_HOST')
 @click.option('-p', '--path', prompt='Full download location including file name', help='Download file to this directory', default='./ksctl.zip')
 def ksctl(host, path):
     download_file(f'https://{host}/downloads/ksctl_images.zip', path)
