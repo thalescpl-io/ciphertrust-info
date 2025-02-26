@@ -1,0 +1,60 @@
+# Ignore .env file (contains sensitive environment variables)
+.env
+
+# Python specific ignores
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+env/
+venv/
+ENV/
+VENV/
+*.venv
+
+# Virtual environment folder
+.venv/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore Byte-compiled files
+*.pyc
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Ignore log files and databases
+*.log
+*.sqlite3
+
+# Ignore IDEs and editors temporary files
+.vscode/
+.idea/
+*.iml
+
+# Ignore coverage reports
+coverage/
+coverage.*.xml
+.cache
+.pytest_cache
+nosetests.xml
+coverage.xml
+*.cover
+cover/
+
+# Ignore distutils / setuptools packaging
+build/
+dist/
+*.egg-info/
+*.spec
+
+# Ignore OS metadata
+**/.DS_Store
+**/Thumbs.db
+
+# Other
+archive/
+
