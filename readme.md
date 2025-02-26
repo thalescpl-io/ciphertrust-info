@@ -72,6 +72,20 @@ Run without any authentication information in the environment or passed on the C
 
 If run with CLI parameters, cminfo will override any defaults or values received from the environment.
 
+```bash
+Usage: cminfo.py [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -h, --host TEXT        CipherTrust node FQDN or IP
+  -u, --username TEXT    Username
+  -p, --password TEXT    Password
+  -d, --domain TEXT      Domain
+  -a, --authdomain TEXT  Authentication domain
+  --debug
+  --version              Show the version and exit.
+  --help                 Show this message and exit.
+```
+
 For example, the command:
 
 ``` bash
@@ -87,7 +101,7 @@ cminfo will check for a **.env** file in the same directory. This file may provi
 ``` bash
 CM_HOST=
 CM_USER=
-CM_PW=T
+CM_PW=
 CM_DOMAIN=root
 CM_AUTHDOMAIN=root
 CM_LIMIT=100
