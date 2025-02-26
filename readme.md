@@ -130,6 +130,8 @@ Options:
 #### Download KSCTL
 This is a convenience function to download the ksctl tool package from the CipherTrust Manager.
 
+**NOTE:** **cminfo** does not required ksctl to function.
+
 ```bash
 Usage: cminfo-v1.3.py download ksctl [OPTIONS]
 
@@ -220,5 +222,4 @@ Options:
 ![Alt text](./images/user-logins.png)
 
 ## Roadmap:
- - Paging of large results
- - Add CSV export
+[Feature Requests and Enhancements](https://github.com/thalescpl-io/ciphertrust-info/issues?q=is%3Aissue%20state%3Aopen%20type%3AFeature)
