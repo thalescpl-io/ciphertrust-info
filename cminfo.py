@@ -197,7 +197,7 @@ def filter_by_date(response, days):
     # Create a new response object with the filtered resources and maintain the original structure
     new_response = response.copy()
     new_response['resources'] = filtered_resources
-    
+    new_response['total'] = len(new_response['resources'])
     return new_response
 
 def flatten_entries(data, subfield):
@@ -341,7 +341,7 @@ def sort_response_keys(resp, collection, sort_field):
         return resp
 
 # CLI  ------------------------------------------------------------------------
-@click.version_option(version='1.4.0', prog_name='cminfo')
+@click.version_option(version='1.4.1', prog_name='cminfo')
 @click.group()
 @click.pass_context
 @click.option('-h', '--host', prompt=True, help='CipherTrust node FQDN or IP', default=DEFAULT_HOST, envvar='CM_HOST')
@@ -525,13 +525,11 @@ def inactive(ctx, limit, days):
     query = build_query(opts)
 
     resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/usermgmt/users{query}')
-    print_totals(resp)
-
     datetime_fields = ["created_at", "updated_at", "last_login", "last_failed_login_at", "password_changed_at"]
     resp = convert_datetime_fields(resp, datetime_fields)
-
     resp = filter_by_date(resp, int(days))
-
+    print_totals(resp)
+    
     column_list = ["name", "user_id", "logins_count", "failed_logins_count", "last_login", "last_failed_login_at", "password_changed_at"]
     column_color_map = {
             'last_failed_login_at': 'red',
