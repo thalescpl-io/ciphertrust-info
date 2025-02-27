@@ -179,6 +179,7 @@ Options:
   -s, --state [Pre-Active|Active|Deactivated|Destroyed|Compromised|Destroyed Compromised]
   -a, --type [AES|RSA|EC|OPAQUE]
   --sort [name|version|state|algorithm|exportable|deletable]
+  --latest                        Show only the latest key version
   --help                          Show this message and exit.
 ```
 ![Alt text](./images/key-list.png)

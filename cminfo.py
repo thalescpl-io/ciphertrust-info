@@ -422,7 +422,7 @@ def key(ctx):
 @click.option('-s', '--state', type=click.Choice(['Pre-Active','Active','Deactivated','Destroyed','Compromised','Destroyed Compromised'], case_sensitive=False))
 @click.option('-a', '--type', type=click.Choice(['AES', 'RSA', 'EC', 'OPAQUE'], case_sensitive=False))
 @click.option('--sort', type=click.Choice(['name', 'version', 'state', 'algorithm', 'exportable', 'deletable'], case_sensitive=False))
-@click.option('--latest', is_flag=True, default=False)
+@click.option('--latest', is_flag=True, default=False, help='Show only the latest key version')
 @click.pass_context
 def list(ctx, limit, state, type, sort, latest):
     #/v1/vault/keys2?limit=10&algorithm=AES
