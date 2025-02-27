@@ -14,7 +14,7 @@ from tqdm import tqdm  # for file download progress bar
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.4.2'
+VERSION = '1.4.3'
 
 # FUNCTIONS  ------------------------------------------------------------------
 def authenticate(host, username, password, domain, authdomain):
@@ -422,10 +422,14 @@ def key(ctx):
 @click.option('-s', '--state', type=click.Choice(['Pre-Active','Active','Deactivated','Destroyed','Compromised','Destroyed Compromised'], case_sensitive=False))
 @click.option('-a', '--type', type=click.Choice(['AES', 'RSA', 'EC', 'OPAQUE'], case_sensitive=False))
 @click.option('--sort', type=click.Choice(['name', 'version', 'state', 'algorithm', 'exportable', 'deletable'], case_sensitive=False))
+@click.option('--latest', is_flag=True, default=False)
 @click.pass_context
-def list(ctx, limit, state, type, sort):
+def list(ctx, limit, state, type, sort, latest):
     #/v1/vault/keys2?limit=10&algorithm=AES
-    opts = dict([('limit', limit), ('state', state), ('algorithm', type)])
+    if latest:
+        opts = dict([('limit', limit), ('state', state), ('algorithm', type), ('version', '-1')])
+    else:
+        opts = dict([('limit', limit), ('state', state), ('algorithm', type)])
     query = build_query(opts)
 
     resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/vault/keys2{query}')
