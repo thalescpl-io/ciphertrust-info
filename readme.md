@@ -2,38 +2,42 @@
 
 # CMInfo
 
-CMINFO is a Python utility that presents CipherTrust information in an easy to visualize format. 
+CMINFO is a Python utility that presents CipherTrust information in an easy to visualize format.
 
 Traditionally, the standard **ksctl** CLI tool returns all results as JSON structured output. This requires parsing the JSON with various methods to present information in a consumable format.
 
 For example, to output a sorted list of keys with interesting fields, you could do the following in a bash shell:
+
 ```bash
 ksctl keys list | jq -r '[.resources[] | {name: .name, algorithm: .algorithm, state: .state}] | sort_by(.name) | .[] | "\(.name), \(.algorithm), \(.state)"'
 ```
 
 With _cminfo_, the same results are displayed with:
+
 ```bash
 cminfo.py key list
 ```
+
 ![Alt text](./images/key-list.png)
 
 ## Contents
+
 - [Installation](#installation)
 - [Authentication](#authentication)
 - [Usage](#usage)
-    - [Alarm](#alarm)
-    - [Download](#download)
-    - [Key](#key)
-    - [User](#user)
-    - [Schedule](#schedule)
-    - [Service](#service)
-    - [System](#system)
+  - [Alarm](#alarm)
+  - [Download](#download)
+  - [Key](#key)
+  - [User](#user)
+  - [Schedule](#schedule)
+  - [Service](#service)
+  - [System](#system)
 - [Roadmap](#roadmap)
-
 
 ## Installation
 
 ### Prerequisites
+
 - Python 3.6+
 - Required Python libraries:
   - `click`
@@ -46,7 +50,9 @@ cminfo.py key list
   - `tqdm`
 
 ### Install Dependencies
+
 You can install the required libraries using pip:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -54,14 +60,16 @@ pip install -r requirements.txt
 It is recommended to create a separate environment first using **venv** or **conda**.
 
 ## Generate Binary
+
 Compiled binaries can be generated using PyInstaller or cx_Freeze.
 For example, using PyInstaller:
+
 ```bash
 pyinstaller -i .\images\logo.ico --onefile .\cminfo.py
 ```
 
-
 ## Authentication
+
 **cminfo** can use parameters, .env file, or environment variables for authentication into CipherTrust.
 
 ### Option 1: No environment and no parameters
@@ -112,8 +120,11 @@ The same values can also be pulled from the shell environment if no .env file is
 ## Usage
 
 ### Alarm
+
 #### Alarm List
+
 To list alarms, use the following command:
+
 ```bash
 Usage: cminfo.py alarm list [OPTIONS]
 
@@ -124,10 +135,13 @@ Options:
   --help                          Show this message and exit.
 
 ```
+
 ![Alt text](./images/alarm-list.png)
 
 ### Download
+
 #### Download KSCTL
+
 This is a convenience function to download the ksctl tool package from the CipherTrust Manager.
 
 **NOTE:** **cminfo** does not required ksctl to function.
@@ -140,11 +154,15 @@ Options:
   -p, --path TEXT  Download file to this directory
   --help           Show this message and exit.
 ```
+
 ![Alt text](./images/download-ksctl.png)
 
 ### Key
+
 #### Key Dates
+
 To list key dates, use the following command:
+
 ```bash
 Usage: cminfo.py key dates [OPTIONS]
 
@@ -155,10 +173,13 @@ Options:
   --help                          Show this message and exit.
 
 ```
+
 ![Alt text](./images/key-dates.png)
 
 #### Key Labels
+
 Display all key labels currently applied to keys.
+
 ```bash
 Usage: cminfo.py key labels [OPTIONS]
 
@@ -166,11 +187,13 @@ Options:
   -l, --limit TEXT  Maximum number of objects to show
   --help            Show this message and exit.
 ```
+
 ![Alt text](./images/key-labels.png)
 
 #### Key List
 
 List all keys. Supports filtering by algorithm and state. Sorting is supported by column name.
+
 ```bash
 Usage: cminfo.py key list [OPTIONS]
 
@@ -182,12 +205,15 @@ Options:
   --latest                        Show only the latest key version
   --help                          Show this message and exit.
 ```
+
 ![Alt text](./images/key-list.png)
 
 ### Schedule
+
 #### Schedule List
 
 Show all schedule configurations.
+
 ```bash
 Usage: cminfo.py schedule list [OPTIONS]
 
@@ -195,24 +221,30 @@ Options:
   -l, --limit TEXT                Maximum number of objects to show
   --sort [name|version|state|algorithm|exportable|deletable]
 ```
+
 ![Alt text](./images/schedule-list.png)
 
 ### Service
+
 #### Service List
 
 Show the state of all CipherTrust microservices.
+
 ```bash
 Usage: cminfo.py service list [OPTIONS]
 
 Options:
   --help                          Show this message and exit.
 ```
+
 ![Alt text](./images/service-list.png)
 
 ### User
+
 #### User Inactive
 
 Show users not logged in for the past X days.
+
 ```bash
 Usage: cminfo.py user inactive [OPTIONS]
 
@@ -221,11 +253,13 @@ Options:
   -d, --days TEXT   Consider inactive if not logged in during this window
   --help            Show this message and exit.
 ```
+
 ![Alt text](./images/user-inactive.png)
 
 #### User Logins
 
 Show login information for each user.
+
 ```bash
 Usage: cminfo.py user logins [OPTIONS]
 
@@ -233,7 +267,9 @@ Options:
   -l, --limit TEXT  Maximum number of objects to show
   --help            Show this message and exit.
 ```
+
 ![Alt text](./images/user-logins.png)
 
-## Roadmap:
+## Roadmap
+
 [Feature Requests and Enhancements](https://github.com/thalescpl-io/ciphertrust-info/issues?q=is%3Aissue%20state%3Aopen%20type%3AFeature)
