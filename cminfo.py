@@ -14,7 +14,7 @@ from tqdm import tqdm  # for file download progress bar
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.4.3'
+VERSION = '1.5.0'
 
 # FUNCTIONS  ------------------------------------------------------------------
 def authenticate(host, username, password, domain, authdomain):
@@ -425,7 +425,7 @@ def key(ctx):
 @click.option('--latest', is_flag=True, default=False, help='Show only the latest key version')
 @click.pass_context
 def list(ctx, limit, state, type, sort, latest):
-    #/v1/vault/keys2?limit=10&algorithm=AES
+    # /v1/vault/keys2?limit=10&algorithm=AES
     if latest:
         opts = dict([('limit', limit), ('state', state), ('algorithm', type), ('version', '-1')])
     else:
@@ -437,11 +437,13 @@ def list(ctx, limit, state, type, sort, latest):
     if resp['total'] > 0:
         print_totals(resp)
 
-        if sort is None: sort = 'name'
-        if sort == 'exportable' or sort == 'deletable': sort = 'un'+sort
+        if sort is None:
+            sort = 'name'
+        if sort == 'exportable' or sort == 'deletable':
+            sort = 'un' + sort
         resp = sort_response_keys(resp, 'resources', sort)
 
-        column_list = ["name", "version", "state", "algorithm", "unexportable", "undeletable"]
+        column_list = ["name", "version", "state", "algorithm", "unexportable", "undeletable", "labels"]
         field_color_map = {
                 'Active': 'green',
                 'Pre-Active': 'cyan',
@@ -452,6 +454,16 @@ def list(ctx, limit, state, type, sort, latest):
                 'True': 'green',
                 'False': 'red'
         }
+
+        # Process and format the 'labels' field for output
+        for resource in resp['resources']:
+            labels = resource.get('labels', {})
+            if labels:
+                formatted_labels = ', '.join([f'{k}={v}' for k, v in labels.items()])
+            else:
+                formatted_labels = ' - '
+            resource['labels'] = formatted_labels
+        # data extraction done, now print the results
         print_table(column_list, resp, 'resources', field_color_map, None)
     else:
         click.echo(click.style("no matching resources", fg='yellow', bold=True))
