@@ -1,7 +1,9 @@
 import click
 import datetime
+import getpass
 import json
 import requests
+import sys
 import urllib3
 from dotenv import load_dotenv
 from rich.table import Table
@@ -14,7 +16,7 @@ from tqdm import tqdm  # for file download progress bar
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.5.0'
+VERSION = '1.5.1'
 
 # FUNCTIONS  ------------------------------------------------------------------
 def authenticate(host, username, password, domain, authdomain):
@@ -324,7 +326,6 @@ def print_table(column_list, resp, key_field=None, field_color_map=None, column_
     # Print the table to the console.
     console.print(table)
 
-
 def print_totals(resp):
     if resp['limit'] <= resp['total']:
         print(f"Showing {resp['limit']} of {resp['total']}")
@@ -337,6 +338,27 @@ def sort_response_keys(resp, collection, sort_field):
     else:
         resp[collection] = sorted(resp[collection], key=lambda x: x[sort_field])
         return resp
+
+def yes_no_input(prompt):
+    """
+    Prompts the user for a yes/no response and returns a boolean.
+
+    Args:
+        prompt: The prompt to display to the user.
+
+    Returns:
+        True if the user enters yes/y, False if no/n.
+        Repeats the prompt if the input is invalid.
+    """
+    while True:
+        user_input = input(f"{prompt} (yes/no or y/n): ").lower()
+        if user_input in ("yes", "y"):
+            return True
+        elif user_input in ("no", "n"):
+            return False
+        else:
+            print("Invalid input. Please enter yes, no, y, or n.")
+
 
 # CLI  ------------------------------------------------------------------------
 @click.version_option(version=VERSION, prog_name='cminfo')
@@ -357,6 +379,19 @@ def cli(ctx, host, username, password, domain, authdomain, debug):
     ctx.obj['host'] = host
     ctx.obj['jwt'] = authenticate(host, username, password, domain, authdomain)
     
+    if ctx.obj['jwt'] is None:
+        again = yes_no_input("Do you want to reauthenticate?")
+        if again:
+            host = input("Host: ")
+            username = input("User: ")
+            password =  getpass.getpass("Password (hidden): ")
+            domain = input("Domain: ")
+            authdomain = input("Auth Domain: ")
+            ctx.obj['jwt'] = authenticate(host, username, password, domain, authdomain)
+        else:
+            click.echo(click.style("Exiting...\n" , fg='red', bold=True))
+            sys.exit(0)
+
     if debug:
         click.echo(click.style(f"AUTH JWT: {ctx.obj['jwt']}\n" , fg='yellow', bold=True))
 
