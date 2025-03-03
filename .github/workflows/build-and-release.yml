@@ -57,7 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/cminfo-linux
+          asset_path: /home/runner/work/ciphertrust-info/ciphertrust-info/build/cminfo-linux/cminfo-linux
           asset_name: cminfo-linux
           asset_content_type: application/octet-stream
 
