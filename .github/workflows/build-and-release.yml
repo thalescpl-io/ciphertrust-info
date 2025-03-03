@@ -57,19 +57,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/cminfo-linux
+          asset_path: /home/runner/work/ciphertrust-info/ciphertrust-info/build/cminfo-linux/cminfo-linux
           asset_name: cminfo-linux
           asset_content_type: application/octet-stream
 
-      - name: Print Outputs
-        id: print_outputs
-        run: |
-          echo "Commit SHA: ${{ steps.checkout_code.outputs.commit_sha }}"
-          echo "Python Version: ${{ steps.setup_python.outputs.python_version }}"
-          echo "Requirements Installed: ${{ steps.install_dependencies.outputs.requirements_installed }}"
-          echo "PyInstaller Built: ${{ steps.run_pyinstaller.outputs.pyinstaller_built }}"
-          echo "PyInstaller Output Path: ${{ steps.run_pyinstaller.outputs.pyinstaller_output_path }}"
-          echo "Release ID: ${{ steps.create_release.outputs.release_id }}"
-          echo "Release HTML URL: ${{ steps.create_release.outputs.release_html_url }}"
-          echo "Release Upload URL: ${{ steps.create_release.outputs.release_upload_url }}"
-          echo "Asset Browser Download URL: ${{ steps.upload_release_asset.outputs.asset_browser_download_url }}"
