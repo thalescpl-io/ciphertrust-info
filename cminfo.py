@@ -6,19 +6,27 @@ import requests
 import sys
 import urllib3
 from dotenv import load_dotenv
+from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from rich.table import Table
 from rich.console import Console
 from rich.text import Text
 from rich import print
 from tqdm import tqdm  # for file download progress bar
-
+from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
 
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.5.1'
+VERSION = '1.5.2'
 
 # FUNCTIONS  ------------------------------------------------------------------
+import requests
+import json
+import click
+import sys
+from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
+from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
+
 def authenticate(host, username, password, domain, authdomain):
     """
     Authenticate the user using the provided credentials and returns a jwt token
@@ -33,7 +41,7 @@ def authenticate(host, username, password, domain, authdomain):
     Returns:
     str: The jwt token if authentication is successful, None otherwise
     """
-
+    
     url = f"https://{host}/api/v1/auth/tokens"
     headers = {'Content-Type': 'application/json'}
     data = {
@@ -43,16 +51,38 @@ def authenticate(host, username, password, domain, authdomain):
         "domain": domain,
         "auth_domain": authdomain
     }
+    
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
+        response.raise_for_status()
+        
+        if response.status_code == 200:
+            click.echo(click.style(f"Connected: {authdomain}|{username} @ {host}\\{domain}" , fg='green', bold=True))
+            print('\n')
+            return response.json().get('jwt')
+        else:
+            click.echo(click.style("Failed to authenticate\n" , fg='red', bold=True))
+            print(response.status_code)
+            return None
+    except HTTPError as http_err:
+        click.echo(click.style(f"HTTP error occurred:\n{http_err}\n", fg='red', bold=True))
+    except ConnectionError as conn_err:
+        click.echo(click.style(f"Connection error occurred:\n{conn_err}\n", fg='red', bold=True))
+    except Timeout as timeout_err:
+        click.echo(click.style(f"Timeout error occurred:\n{timeout_err}\n", fg='red', bold=True))
+    except NewConnectionError as new_conn_err:
+        click.echo(click.style(f"New connection error occurred:\n{new_conn_err}\n", fg='red', bold=True))
+    except MaxRetryError as max_retry_err:
+        click.echo(click.style(f"Max retry error occurred:\n{max_retry_err}\n", fg='red', bold=True))
+    except SSLError as ssl_err:
+        click.echo(click.style(f"SSL error occurred:\n{ssl_err}\n", fg='red', bold=True))
+    except RequestException as req_err:
+        click.echo(click.style(f"Request exception occurred:\n{req_err}\n", fg='red', bold=True))
+    except Exception as ex:
+        click.echo(click.style(f"An unexpected error occurred:\n{ex}\n", fg='red', bold=True))
+    
+    return None
 
-    response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
-    if response.status_code == 200:
-        click.echo(click.style(f"Connected: {authdomain}|{username} @ {host}\\{domain}" , fg='green', bold=True))
-        print('\n')
-        return response.json().get('jwt')
-    else:
-        print("Failed to authenticate")
-        print(response.status_code)
-        return None
     # authenticate
 
 def api_get_noauth(host, api):
@@ -379,7 +409,7 @@ def cli(ctx, host, username, password, domain, authdomain, debug):
     ctx.obj['host'] = host
     ctx.obj['jwt'] = authenticate(host, username, password, domain, authdomain)
     
-    if ctx.obj['jwt'] is None:
+    while ctx.obj['jwt'] is None:
         again = yes_no_input("Do you want to reauthenticate?")
         if again:
             host = input("Host: ")
