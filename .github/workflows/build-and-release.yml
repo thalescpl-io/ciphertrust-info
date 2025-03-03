@@ -35,7 +35,7 @@ jobs:
         id: run_pyinstaller
         run: |
           pip install pyinstaller
-          pyinstaller -i ./images/logo.ico -n cminfo-linux ./cminfo.py
+          pyinstaller --onefile -i ./images/logo.ico -n cminfo-linux ./cminfo.py
 
       - name: Create Release
         id: create_release
