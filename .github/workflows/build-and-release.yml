@@ -1,0 +1,75 @@
+name: Build CMINFO and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read, write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # This is important to fetch all history for all tags
+
+      - name: Set up Python 3.13
+        id: setup_python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+
+      - name: Install dependencies
+        id: install_dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run PyInstaller
+        id: run_pyinstaller
+        run: |
+          pip install pyinstaller
+          pyinstaller -i ./images/logo.ico -n cminfo-linux ./cminfo.py
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release for version ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/cminfo-linux
+          asset_name: cminfo-linux
+          asset_content_type: application/octet-stream
+
+      - name: Print Outputs
+        id: print_outputs
+        run: |
+          echo "Commit SHA: ${{ steps.checkout_code.outputs.commit_sha }}"
+          echo "Python Version: ${{ steps.setup_python.outputs.python_version }}"
+          echo "Requirements Installed: ${{ steps.install_dependencies.outputs.requirements_installed }}"
+          echo "PyInstaller Built: ${{ steps.run_pyinstaller.outputs.pyinstaller_built }}"
+          echo "PyInstaller Output Path: ${{ steps.run_pyinstaller.outputs.pyinstaller_output_path }}"
+          echo "Release ID: ${{ steps.create_release.outputs.release_id }}"
+          echo "Release HTML URL: ${{ steps.create_release.outputs.release_html_url }}"
+          echo "Release Upload URL: ${{ steps.create_release.outputs.release_upload_url }}"
+          echo "Asset Browser Download URL: ${{ steps.upload_release_asset.outputs.asset_browser_download_url }}"
