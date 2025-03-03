@@ -17,7 +17,7 @@ from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.5.2'
+VERSION = '1.5.3-alpha'
 
 # FUNCTIONS  ------------------------------------------------------------------
 import requests
