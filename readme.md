@@ -59,7 +59,7 @@ pip install -r requirements.txt
 
 It is recommended to create a separate environment first using **venv** or **conda**.
 
-## Generate Binary
+## Optional - Generate Binary
 
 Compiled binaries can be generated using PyInstaller or cx_Freeze.
 For example, using PyInstaller:
