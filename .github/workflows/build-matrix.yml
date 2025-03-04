@@ -63,7 +63,7 @@ jobs:
           prerelease: false
 
       - name: Add Asset to Existing Release
-        if: ${{ steps.create_release.outputs.upload_url == '' }}
+        if: ${{ steps.create_release.outputs.upload_url != '' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
