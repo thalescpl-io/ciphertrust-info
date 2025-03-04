@@ -62,7 +62,7 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Add Linux Asset to Existing Release
+      - name: Add Asset to Existing Release
         if: ${{ matrix.os == 'ubuntu-latest' && steps.create_release.outputs.upload_url == '' }}
         uses: actions/upload-release-asset@v1
         env:
@@ -73,13 +73,24 @@ jobs:
           asset_name: ${{ matrix.asset_name }}
           asset_content_type: application/octet-stream
 
-      - name: Add Windows Asset to Existing Release
-        if: ${{ matrix.os == 'windows-latest' && steps.create_release.outputs.upload_url == '' }}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ matrix.asset_path }}
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: application/octet-stream
+      # - name: Add Linux Asset to Existing Release
+      #   if: ${{ matrix.os == 'ubuntu-latest' && steps.create_release.outputs.upload_url == '' }}
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: ${{ matrix.asset_path }}
+      #     asset_name: ${{ matrix.asset_name }}
+      #     asset_content_type: application/octet-stream
+
+      # - name: Add Windows Asset to Existing Release
+      #   if: ${{ matrix.os == 'windows-latest' && steps.create_release.outputs.upload_url == '' }}
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ github.event.release.upload_url }}
+      #     asset_path: ${{ matrix.asset_path }}
+      #     asset_name: ${{ matrix.asset_name }}
+      #     asset_content_type: application/octet-stream
