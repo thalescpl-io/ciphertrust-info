@@ -27,10 +27,14 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             echo "FILENAME=cminfo-linux" >> $GITHUB_ENV
-            echo "PATH=/home/runner/work/ciphertrust-info/ciphertrust-info/dist/cminfo-linux" >> $GITHUB_ENV
+            echo "FILEPATH=/home/runner/work/ciphertrust-info/ciphertrust-info/dist/cminfo-linux" >> $GITHUB_ENV
+            echo "The filename is $FILENAME"
+            echo "The filepath is $FILEPATH"
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             echo "FILENAME=cminfo-windows" >> $GITHUB_ENV
             echo "FILEPATH=./dist/cminfo-windows" >> $GITHUB_ENV
+            echo "The filename is $FILENAME"
+            echo "The filepath is $FILEPATH"
           fi
 
       - name: Set up Python 3.13
