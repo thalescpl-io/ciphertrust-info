@@ -31,7 +31,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0 # This is important to fetch all history for all tags
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
