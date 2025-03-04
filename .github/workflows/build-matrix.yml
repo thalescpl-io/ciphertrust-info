@@ -47,7 +47,9 @@ jobs:
         id: run_pyinstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile -i ./images/logo.ico -n $FILENAME ./cminfo.py
+          pyinstaller --onefile -i -n $FILENAME ./cminfo.py
+        env:
+          FILENAME: ${{ matrix.os == 'ubuntu-latest' && 'cminfo-linux' || 'cminfo-windows' }}
 
       # - name: Create Release
       #   id: create_release
