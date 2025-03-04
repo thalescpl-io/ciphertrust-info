@@ -9,12 +9,36 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release for version ${{ github.ref }}
+          draft: false
+          prerelease: false
+
   build:
     runs-on: ${{ matrix.os }}
+    needs: create-release
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
             platform: linux
@@ -48,49 +72,12 @@ jobs:
           pip install pyinstaller
           pyinstaller ${{ matrix.pyinstaller_options }}
 
-      - name: Create Release
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            Release for version ${{ github.ref }}
-          draft: false
-          prerelease: false
-
       - name: Add Asset to Existing Release
-        if: ${{ steps.create_release.outputs.upload_url == '' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ${{ matrix.asset_path }}
           asset_name: ${{ matrix.asset_name }}
           asset_content_type: application/octet-stream
-
-      # - name: Add Linux Asset to Existing Release
-      #   if: ${{ matrix.os == 'ubuntu-latest' && steps.create_release.outputs.upload_url == '' }}
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #     asset_path: ${{ matrix.asset_path }}
-      #     asset_name: ${{ matrix.asset_name }}
-      #     asset_content_type: application/octet-stream
-
-      # - name: Add Windows Asset to Existing Release
-      #   if: ${{ matrix.os == 'windows-latest' && steps.create_release.outputs.upload_url == '' }}
-      #   uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ github.event.release.upload_url }}
-      #     asset_path: ${{ matrix.asset_path }}
-      #     asset_name: ${{ matrix.asset_name }}
-      #     asset_content_type: application/octet-stream
