@@ -47,7 +47,7 @@ jobs:
         id: run_pyinstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile -i -n $FILENAME ./cminfo.py
+          pyinstaller --onefile -n $FILENAME ./cminfo.py
         env:
           FILENAME: ${{ matrix.os == 'ubuntu-latest' && 'cminfo-linux' || 'cminfo-windows' }}
 
