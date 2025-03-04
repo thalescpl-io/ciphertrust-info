@@ -37,25 +37,31 @@ jobs:
           "echo FILENAME=cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
           "echo FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Set up Python 3.13
-        id: setup_python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.13
-
-      - name: Install dependencies
-        id: install_dependencies
+      - name: Test Environment
+        id: test_env
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          echo ${{ env.FILENAME }}
+          pwd
 
-      - name: Run PyInstaller
-        id: run_pyinstaller
-        run: |
-          pip install pyinstaller
-          pyinstaller --onefile -n ${{ env.FILENAME }} ./cminfo.py
-        # env:
-        #   FILENAME: ${{ env.FILENAME }}
+      # - name: Set up Python 3.13
+      #   id: setup_python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: 3.13
+
+      # - name: Install dependencies
+      #   id: install_dependencies
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install -r requirements.txt
+
+      # - name: Run PyInstaller
+      #   id: run_pyinstaller
+      #   run: |
+      #     pip install pyinstaller
+      #     pyinstaller --onefile -n ${{ env.FILENAME }} ./cminfo.py
+      # env:
+      #   FILENAME: ${{ env.FILENAME }}
 
       # - name: Create Release
       #   id: create_release
