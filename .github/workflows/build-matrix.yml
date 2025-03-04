@@ -34,8 +34,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          "echo FILENAME=cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "echo FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $env:GITHUB_ENV = $env:GITHUB_ENV + ";FILENAME=cminfo-windows"
+          $env:GITHUB_ENV = $env:GITHUB_ENV + ";FILEPATH=D:\a\ciphertrust-info\ciphertrust-info\dist\cminfo-windows"
 
       - name: Test Linux Environment
         id: test_linux
