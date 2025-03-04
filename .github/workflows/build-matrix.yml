@@ -25,17 +25,11 @@ jobs:
       - name: Set filename and path based on OS
         id: set-filename
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            echo "FILENAME=cminfo-linux" >> $GITHUB_ENV
-            echo "FILEPATH=/home/runner/work/ciphertrust-info/ciphertrust-info/dist/cminfo-linux" >> $GITHUB_ENV
-            echo "The filename is $FILENAME"
-            echo "The filepath is $FILEPATH"
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            echo "FILENAME=cminfo-windows" >> $GITHUB_ENV
-            echo "FILEPATH=./dist/cminfo-windows" >> $GITHUB_ENV
-            echo "The filename is $FILENAME"
-            echo "The filepath is $FILEPATH"
-          fi
+          echo "The filename is $FILENAME"
+          echo "The filepath is $FILEPATH"
+        env:
+          FILENAME: ${{ matrix.os == 'ubuntu-latest' && 'cminfo-linux' || 'cminfo-windows' }}
+          FILEPATH: ${{ matrix.os == 'ubuntu-latest' && '/home/runner/work/ciphertrust-info/ciphertrust-info/dist/cminfo-linux' || './dist/cminfo-windows' }}
 
       - name: Set up Python 3.13
         id: setup_python
