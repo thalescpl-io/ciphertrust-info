@@ -34,8 +34,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "FILENAME=cminfo-windows"-Encoding utf8 -Append
-          Add-Content -Path $env:GITHUB_ENV -Value "FILEPATH=./dist/cminfo-windows" -Encoding utf8 -Append
+          "FILENAME=cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           echo "Using the filename: $env:FILENAME"
           echo "Using the filepath: $env:FILEPATH"
 
