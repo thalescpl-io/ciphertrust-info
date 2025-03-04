@@ -53,9 +53,9 @@ jobs:
         id: run_pyinstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile -n $FILENAME ./cminfo.py
-        env:
-          FILENAME: ${{ env.FILENAME }}
+          pyinstaller --onefile -n ${{ env.FILENAME }} ./cminfo.py
+        # env:
+        #   FILENAME: ${{ env.FILENAME }}
 
       # - name: Create Release
       #   id: create_release
