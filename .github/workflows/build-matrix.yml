@@ -38,14 +38,14 @@ jobs:
           "echo FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Test Linux Environment
-        id: test_env
+        id: test_linux
         if: runner.os == 'Linux'
         run: |
           pwd
           echo $FILEPATH
 
       - name: Test Windows Environment
-        id: test_env
+        id: test_windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
