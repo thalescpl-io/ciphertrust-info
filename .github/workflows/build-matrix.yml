@@ -29,12 +29,15 @@ jobs:
           echo "FILENAME=cminfo-linux" >> $GITHUB_ENV
           echo "FILEPATH=/home/runner/work/ciphertrust-info/ciphertrust-info/dist/cminfo-linux" >> $GITHUB_ENV
 
-      # Set filename and path for Windows
+        # Set filename and path for Windows
       - name: Set filename and path for Windows
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          echo "FILENAME=cminfo-windows" >> $GITHUB_ENV
-          echo "FILEPATH=./dist/cminfo-windows" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "FILENAME=cminfo-windows"-Encoding utf8 -Append
+          Add-Content -Path $env:GITHUB_ENV -Value "FILEPATH=./dist/cminfo-windows" -Encoding utf8 -Append
+          echo "Using the filename: $env:FILENAME"
+          echo "Using the filepath: $env:FILEPATH"
 
       # - name: Set up Python 3.13
       #   id: setup_python
