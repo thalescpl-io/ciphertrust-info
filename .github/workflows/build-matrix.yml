@@ -1,0 +1,76 @@
+name: Build CMINFO and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # This is important to fetch all history for all tags
+
+      - name: Set filename and path based on OS
+        id: set-filename
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            echo "FILENAME=cminfo-linux" >> $GITHUB_ENV
+            echo "PATH=/home/runner/work/ciphertrust-info/ciphertrust-info/dist/cminfo-linux" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "FILENAME=cminfo-windows" >> $GITHUB_ENV
+            echo "FILEPATH=./dist/cminfo-windows" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Python 3.13
+        id: setup_python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.13
+
+      - name: Install dependencies
+        id: install_dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run PyInstaller
+        id: run_pyinstaller
+        run: |
+          pip install pyinstaller
+          pyinstaller --onefile -i ./images/logo.ico -n $FILENAME ./cminfo.py
+
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     release_name: Release ${{ github.ref }}
+      #     body: |
+      #       Release for version ${{ github.ref }}
+      #     draft: false
+      #     prerelease: false
+
+      # - name: Upload Release Asset
+      #   id: upload_release_asset
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_path: $FILEPATH
+      #     asset_name: $FILENAME
+      #     asset_content_type: application/octet-stream
