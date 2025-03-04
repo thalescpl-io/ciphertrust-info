@@ -37,11 +37,20 @@ jobs:
           "echo FILENAME=cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
           "echo FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Test Environment
+      - name: Test Linux Environment
         id: test_env
+        if: runner.os == 'Linux'
         run: |
-          echo ${{ env.FILENAME }}
           pwd
+          echo $FILEPATH
+
+      - name: Test Windows Environment
+        id: test_env
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          pwd
+          write-host $env:FILEPATH
 
       # - name: Set up Python 3.13
       #   id: setup_python
