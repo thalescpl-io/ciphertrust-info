@@ -10,10 +10,11 @@ changelog:
     - title: Features and Enhancements
       labels:
         - Semver-Major
+        - Semver-Minor
         - enhancement
     - title: Bug Fixes
       labels:
-        - Semver-Minor
+        - Semver-Patch
         - bug
     - title: Other Changes
       labels:
