@@ -24,8 +24,8 @@ jobs:
           - os: windows-latest
             platform: windows
             pyinstaller_options: "--onefile -n cminfo-windows ./cminfo.py"
-            asset_path: D:\a\ciphertrust-info\ciphertrust-info\dist\cminfo-windows
-            asset_name: cminfo-windows
+            asset_path: D:\a\ciphertrust-info\ciphertrust-info\dist\cminfo-windows.exe
+            asset_name: cminfo-windows.exe
 
     steps:
       - name: Checkout code
