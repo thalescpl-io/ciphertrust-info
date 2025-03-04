@@ -34,10 +34,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          "$env:FILENAME=cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "$env:FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          echo "Using the filename: $env:FILENAME"
-          echo "Using the filepath: $env:FILEPATH"
+          "echo FILENAME=cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "echo FILEPATH=./dist/cminfo-windows" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Set up Python 3.13
         id: setup_python
@@ -57,7 +55,7 @@ jobs:
           pip install pyinstaller
           pyinstaller --onefile -n $FILENAME ./cminfo.py
         env:
-          FILENAME: $FILENAME
+          FILENAME: ${{ env.FILENAME }}
 
       # - name: Create Release
       #   id: create_release
