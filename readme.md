@@ -121,6 +121,8 @@ The same values can also be pulled from the shell environment if no .env file is
 
 ### Alarm
 
+---
+
 #### Alarm List
 
 To list alarms, use the following command:
@@ -140,6 +142,8 @@ Options:
 
 ### Download
 
+---
+
 #### Download KSCTL
 
 This is a convenience function to download the ksctl tool package from the CipherTrust Manager.
@@ -157,7 +161,29 @@ Options:
 
 ![Alt text](./images/download-ksctl.png)
 
+### Interface
+
+---
+
+#### Interface List
+
+To list protocol interfaces, use the following command:
+
+```bash
+Usage: cminfo.py interface list [OPTIONS]
+
+Options:
+  -t, --type [kmip|nae|ssh|web]
+  --sort [port|interface_type|enabled|minimum_tls_version]
+  --help                          Show this message and exit.
+
+```
+
+![Alt text](./images/interface-list.png)
+
 ### Key
+
+---
 
 #### Key Dates
 
@@ -208,7 +234,26 @@ Options:
 
 ![Alt text](./images/key-list.png)
 
+#### Key Weak
+
+List all weak keys. Supports filtering by algorithm. Sorting is supported by column name.
+
+```bash
+Usage: cminfo.py key list [OPTIONS]
+
+Options:
+  -l, --limit TEXT                Maximum number of objects to show
+  -a, --type [AES|RSA|EC|OPAQUE]
+  --sort [name|version|state|algorithm|exportable|deletable]
+  --latest                        Show only the latest key version
+  --help                          Show this message and exit.
+```
+
+![Alt text](./images/key-weak.png)
+
 ### Schedule
+
+---
 
 #### Schedule List
 
@@ -226,6 +271,8 @@ Options:
 
 ### Service
 
+---
+
 #### Service List
 
 Show the state of all CipherTrust microservices.
@@ -240,6 +287,8 @@ Options:
 ![Alt text](./images/service-list.png)
 
 ### User
+
+---
 
 #### User Inactive
 

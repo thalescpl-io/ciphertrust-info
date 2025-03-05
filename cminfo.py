@@ -17,7 +17,7 @@ from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.5.3'
+VERSION = '1.6.0'
 
 # FUNCTIONS  ------------------------------------------------------------------
 import requests
@@ -259,6 +259,22 @@ def flatten_entries(data, subfield):
 #     else:
 #         return r
 
+def get_ca_subject(host, jwt, id, type='local'):
+    if type == 'local':
+        api = f'/v1/ca/local-cas/{id}'
+    if type == 'external':
+        api = f'/v1/ca/external-cas/{id}'
+    url = f"https://{host}/api{api}"
+    headers = {'Authorization': f'Bearer {jwt}'}
+    response = requests.get(url, headers=headers, verify=False)
+    if response.status_code == 200:
+        return str(response.json().get('subject'))
+    else:
+        click.echo(click.style("Failed to get certificate authority subject\n" , fg='yellow', bold=True))
+        click.echo(click.style(f"{response.status_code}\n" , fg='yellow', bold=True))
+        return None
+    # get_ca_name
+
 def get_resource_limit(host, api, jwt):
     url = f"https://{host}/api{api}"
     headers = {'Authorization': f'Bearer {jwt}'}
@@ -475,6 +491,63 @@ def download():
 def ksctl(host, path):
     download_file(f'https://{host}/downloads/ksctl_images.zip', path)
 
+# CLI:INTERFACE  --------------------------------------------------------------------
+@cli.group()
+@click.pass_context
+def interface(ctx):
+    pass
+
+# CLI:INTERFACE:LIST
+@interface.command()
+@click.option('-t', '--type', type=click.Choice(['kmip', 'nae', 'ssh', 'web'], case_sensitive=False))
+@click.option('--sort', type=click.Choice(['port', 'interface_type', 'enabled', 'minimum_tls_version'], case_sensitive=False))
+@click.pass_context
+def list(ctx, type, sort):
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/configs/interfaces')
+    if resp['total'] > 0:
+        if sort is None:
+            sort = 'port'
+        resp = sort_response_keys(resp, 'resources', sort)
+        
+        column_list = ["port", "interface_type", "enabled", "mode", "minimum_tls_version", "cert_user_field", "trusted_cas"]
+        field_color_map = {
+                'True': 'green',
+                'False': 'red',
+                'no-tls-pw-opt': 'red',
+                'no-tls-pw-req': 'red',
+                'unauth-tls-pw-opt': 'red'
+        }
+
+        # Get subject strings for trusted CAs
+        for resource in resp['resources']:
+            ca_dict = resource.get('trusted_cas', {})
+            
+            formatted_cas = []
+            # Process local CAs
+            local_cas = ca_dict.get('local', [])
+            for ca in local_cas:
+                subject = get_ca_subject(ctx.obj['host'], ctx.obj['jwt'], ca, type='local')
+                formatted_cas.append(subject)
+
+            # Process external CAs
+            external_cas = ca_dict.get('external', [])
+            for ca in external_cas:
+                subject = get_ca_subject(ctx.obj['host'], ctx.obj['jwt'], ca, type='external')
+                formatted_cas.append(subject)
+
+            # Handle case where no CAs found
+            if not formatted_cas:
+                formatted_cas.append('')
+
+            resource['trusted_cas'] = formatted_cas
+
+        # data extraction done, now print the results
+        print_totals(resp)
+        print_table(column_list, resp, 'resources', field_color_map, None)
+    else:
+        click.echo(click.style("no matching resources", fg='yellow', bold=True))
+
+
 # CLI:KEY  --------------------------------------------------------------------
 @cli.group()
 @click.pass_context
@@ -508,7 +581,7 @@ def list(ctx, limit, state, type, sort, latest):
             sort = 'un' + sort
         resp = sort_response_keys(resp, 'resources', sort)
 
-        column_list = ["name", "version", "state", "algorithm", "unexportable", "undeletable", "labels"]
+        column_list = ["name", "version", "state", "algorithm", "size", "unexportable", "undeletable", "labels"]
         field_color_map = {
                 'Active': 'green',
                 'Pre-Active': 'cyan',
@@ -587,6 +660,78 @@ def labels(ctx, limit):
             for key, value in resource.items():
                 table.add_row(key, resource[key])
     console.print(table)
+
+# CLI:KEY:WEAK
+@key.command()
+@click.option('-l', '--limit', prompt='Query limit', help='Maximum number of objects to show', default='20', envvar='CM_LIMIT')
+@click.option('-a', '--type', type=click.Choice(['AES', 'RSA', 'EC', 'OPAQUE'], case_sensitive=False))
+@click.option('--sort', type=click.Choice(['name', 'version', 'state', 'algorithm', 'exportable', 'deletable'], case_sensitive=False))
+@click.option('--latest', is_flag=True, default=False, help='Show only the latest key version')
+@click.pass_context
+def weak(ctx, limit, type, sort, latest):
+    if latest:
+        opts = dict([('limit', limit), ('algorithm', type), ('version', '-1')])
+    else:
+        opts = dict([('limit', limit), ('algorithm', type)])
+    query = build_query(opts)
+
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/vault/keys2{query}')
+
+    if resp['total'] > 0:
+        if sort is None:
+            sort = 'name'
+        if sort == 'exportable' or sort == 'deletable':
+            sort = 'un' + sort
+        resp = sort_response_keys(resp, 'resources', sort)
+
+        column_list = ["name", "version", "state", "algorithm", "size", "unexportable", "undeletable", "labels"]
+        field_color_map = {
+                'Active': 'green',
+                'Pre-Active': 'cyan',
+                'Deactivated': 'yellow',
+                'Destroyed': 'red',
+                'Compromised': 'red',
+                'Destroyed Compromised': 'red',
+                'True': 'green',
+                'False': 'red'
+        }
+
+        # Process each key type and filter for weak lengths
+        weak_keys = {
+            'skip': 0,
+            'limit': int(limit),
+            'total': 0,
+            'resources': []
+        }
+        # Define criteria for weak keys
+        weak_criteria = {
+            'AES': 256,
+            'RSA': 2048,
+            'EC': 256
+        }
+
+        # Filter and process weak keys
+        for resource in resp['resources']:
+            # Process and format the 'labels' field for output
+            labels = resource.get('labels', {})
+            if labels:
+                formatted_labels = ', '.join([f'{k}={v}' for k, v in labels.items()])
+            else:
+                formatted_labels = ' - '
+            resource['labels'] = formatted_labels
+
+            algorithm = resource.get('algorithm')
+            size = resource.get('size')
+            if algorithm in weak_criteria and size < weak_criteria[algorithm]:
+                weak_keys['resources'].append(resource)
+                weak_keys['total'] += 1
+
+        # data extraction done, now print the results
+        print_totals(weak_keys)
+        print_table(column_list, weak_keys, 'resources', field_color_map, None)
+    else:
+        click.echo(click.style("no matching resources", fg='yellow', bold=True))
+
 
 # CLI:USER  -------------------------------------------------------------------
 @cli.group()
