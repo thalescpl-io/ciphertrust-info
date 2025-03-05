@@ -27,6 +27,7 @@ cminfo.py key list
 - [Usage](#usage)
   - [Alarm](#alarm)
   - [Download](#download)
+  - [Interface](#interface)
   - [Key](#key)
   - [User](#user)
   - [Schedule](#schedule)
@@ -285,6 +286,24 @@ Options:
 ```
 
 ![Alt text](./images/service-list.png)
+
+### System
+
+---
+
+#### System Info
+
+To CipherTrust node information, use the following command:
+
+```bash
+Usage: cminfo.py system info
+
+Options:
+  --help                          Show this message and exit.
+
+```
+
+![Alt text](./images/system-info.png)
 
 ### User
 
