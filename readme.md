@@ -35,7 +35,11 @@ cminfo.py key list
   - [System](#system)
 - [Roadmap](#roadmap)
 
-## Installation
+## Pre-built All-In-One Binaries
+Prebuilt binaries for Linux and Windows are available under Releases.
+Binaries include the Python runtime and required modules.
+
+## Source Installation
 
 ### Prerequisites
 
