@@ -36,6 +36,7 @@ cminfo.py key list
 - [Roadmap](#roadmap)
 
 ## Pre-built All-In-One Binaries
+
 Prebuilt binaries for Linux and Windows are available under Releases.
 Binaries include the Python runtime and required modules.
 
@@ -205,7 +206,25 @@ Options:
 
 ```
 
-![Alt text](./images/key-dates.png)
+#### Key IDs
+
+To list key with all ID values, use the following command:
+
+```bash
+Usage: cminfo.py key ids [OPTIONS]
+
+Options:
+  -l, --limit TEXT                Maximum number of objects to show
+  -t, --truncate INTEGER          only show first and last X characters
+                                  (default 8)
+  -s, --state [Pre-Active|Active|Deactivated|Destroyed|Compromised|Destroyed Compromised]
+  -a, --type [AES|RSA|EC|OPAQUE]
+  --sort [name|version|state|algorithm|exportable|deletable]
+  --latest                        Show only the latest key version
+  --help                          Show this message and exit.
+```
+
+![Alt text](./images/key-ids.png)
 
 #### Key Labels
 

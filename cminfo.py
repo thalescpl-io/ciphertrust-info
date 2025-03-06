@@ -17,7 +17,7 @@ from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
 
 # GLOBALS  --------------------------------------------------------------------
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.6.1'
+VERSION = '1.7.0'
 
 # FUNCTIONS  ------------------------------------------------------------------
 import requests
@@ -378,6 +378,13 @@ def print_totals(resp):
     else:
         print(f"Showing {resp['total']} of {resp['total']}")
 
+def shorten_id(id_string, stub):
+    if len(id_string) > 10:
+        shortened = id_string[:stub] + '...' + id_string[-stub:]
+        return shortened
+    else:
+        return id_string
+
 def sort_response_keys(resp, collection, sort_field):
     if collection is None:
         return resp
@@ -553,6 +560,56 @@ def list(ctx, type, sort):
 @click.pass_context
 def key(ctx):
     pass
+
+# CLI:KEY:IDS
+@key.command()
+@click.option('-l', '--limit', prompt='Query limit', help='Maximum number of objects to show', default='10', envvar='CM_LIMIT')
+@click.option('-t', '--truncate', help='only show first and last X characters (default 8)', default=8)
+@click.option('-s', '--state', type=click.Choice(['Pre-Active','Active','Deactivated','Destroyed','Compromised','Destroyed Compromised'], case_sensitive=False))
+@click.option('-a', '--type', type=click.Choice(['AES', 'RSA', 'EC', 'OPAQUE'], case_sensitive=False))
+@click.option('--sort', type=click.Choice(['name', 'version', 'state', 'algorithm', 'exportable', 'deletable'], case_sensitive=False))
+@click.option('--latest', is_flag=True, default=False, help='Show only the latest key version')
+@click.pass_context
+def ids(ctx, limit, truncate, state, type, sort, latest):
+    if latest:
+        opts = dict([('limit', limit), ('state', state), ('algorithm', type), ('version', '-1')])
+    else:
+        opts = dict([('limit', limit), ('state', state), ('algorithm', type)])
+    query = build_query(opts)
+
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/vault/keys2{query}')
+
+    if resp['total'] > 0:
+        if sort is None:
+            sort = 'name'
+        if sort == 'exportable' or sort == 'deletable':
+            sort = 'un' + sort
+        resp = sort_response_keys(resp, 'resources', sort)
+
+        column_list = ["state", "version", "name", "id", "uuid", "muid", "sha256Fingerprint"]
+        field_color_map = {
+                'Active': 'green',
+                'Pre-Active': 'cyan',
+                'Deactivated': 'yellow',
+                'Destroyed': 'red',
+                'Compromised': 'red',
+                'Destroyed Compromised': 'red',
+                'True': 'green',
+                'False': 'red'
+        }
+
+        # Process and format the 'id', 'uuid', 'muid', 'sha256Fingerprint' field for output
+        for resource in resp['resources']:
+            for key in ['id', 'uuid', 'muid', 'sha256Fingerprint']:
+                if key in resource:
+                    resource[key] = shorten_id(id_string=resource[key], stub=truncate)
+  
+        # data extraction done, now print the results
+        print_totals(resp)
+        click.echo(click.style(f"Showing first...last {truncate} characters", fg='yellow', bold=True))
+        print_table(column_list, resp, 'resources', field_color_map, None)
+    else:
+        click.echo(click.style("no matching resources", fg='yellow', bold=True))
 
 # CLI:KEY:LIST
 @key.command()
