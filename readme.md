@@ -26,6 +26,7 @@ cminfo.py key list
 - [Authentication](#authentication)
 - [Usage](#usage)
   - [Alarm](#alarm)
+  - [CTE](#cte)
   - [Download](#download)
   - [Interface](#interface)
   - [Key](#key)
@@ -146,6 +147,70 @@ Options:
 
 ![Alt text](./images/alarm-list.png)
 
+### CTE
+
+---
+
+#### CTE CLIENT LIST
+
+List registered CTE client information:
+
+```bash
+Usage: cminfo.py cte client list [OPTIONS]
+
+Options:
+  -l, --limit TEXT  Maximum number of clients to show
+  --help            Show this message and exit.
+
+```
+
+![Alt text](./images/cte-client-list.png)
+
+#### CTE CLIENT HEALTH
+
+Show CTE client health information:
+
+```bash
+Usage: cminfo.py cte client health [OPTIONS]
+
+Options:
+  -l, --limit TEXT  Maximum number of clients to show
+  --help            Show this message and exit.
+
+```
+
+![Alt text](./images/cte-client-health.png)
+
+#### CTE GUARDPOINTS
+
+List guardpoints on a specific client:
+
+```bash
+Usage: cminfo.py cte guardpoints [OPTIONS]
+
+Options:
+  -c, --client TEXT  client name or identifier  [required]
+  -l, --limit TEXT   Maximum number of clients to show
+  --help             Show this message and exit.
+```
+
+![Alt text](./images/cte-guardpoints.png)
+
+#### CTE CLIENT AUTH
+
+Show CTE client authenticated binaries:
+
+```bash
+Usage: cminfo.py cte client auth [OPTIONS]
+
+Options:
+  -c, --client TEXT  client name or identifier  [required]
+  --help             Show this message and exit.
+```
+
+![Alt text](./images/cte-client-auth-linux.png)
+![Alt text](./images/cte-client-auth-windows.png)
+
 ### Download
 
 ---
@@ -205,6 +270,8 @@ Options:
   --help                          Show this message and exit.
 
 ```
+
+![Alt text](./images/key-dates.png)
 
 #### Key IDs
 

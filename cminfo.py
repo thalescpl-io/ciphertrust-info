@@ -6,6 +6,7 @@ import requests
 import sys
 import urllib3
 from dotenv import load_dotenv
+from pathlib import Path
 from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 from rich.table import Table
 from rich.console import Console
@@ -275,6 +276,16 @@ def get_ca_subject(host, jwt, id, type='local'):
         return None
     # get_ca_name
 
+def get_client_groups(host, jwt, client_id):
+    member_of = []
+    api = f"/v1/transparent-encryption/clients/{client_id}/clientgroups"
+
+    resp = api_get(host, api, jwt)
+    if resp['total'] > 0:
+        for resource in resp['resources']:
+            member_of.append(resource['name'])
+    return member_of
+
 def get_resource_limit(host, api, jwt):
     url = f"https://{host}/api{api}"
     headers = {'Authorization': f'Bearer {jwt}'}
@@ -287,7 +298,7 @@ def get_resource_limit(host, api, jwt):
         return None
     # get_resource_limit
 
-def iso_to_local(iso):
+def iso_to_local(iso: str) -> str:
     """
     Converts an ISO 8601 formatted datetime string to a local datetime string in the format "%Y-%m-%d %H:%M".
 
@@ -370,6 +381,40 @@ def print_table(column_list, resp, key_field=None, field_color_map=None, column_
                 table.add_row(*original_row_data)
     
     # Print the table to the console.
+    console.print(table)
+
+def print_binaries_table(response_data, column_list, color_map):
+    # Ensure the response structure is correct
+    if not isinstance(response_data, dict) or 'auth_binaries' not in response_data:
+        raise ValueError("Response object must contain an 'auth_binaries' field.")
+    
+    # Create a Console object to print the table
+    console = Console()
+
+    # Create a Table object
+    table = Table(show_header=True, header_style="bold magenta")
+
+    # Add columns based on column_list
+    for column in column_list:
+        table.add_column(column)
+    
+    # Process the auth_binaries field
+    auth_binaries = response_data.get('auth_binaries', '')
+    if auth_binaries:
+        # Parse the auth_binaries JSON string into a list of dictionaries
+        try:
+            auth_binaries_data = json.loads(auth_binaries)
+            for item in auth_binaries_data:
+                row = []
+                for column in column_list:
+                    value = str(item.get(column, ''))
+                    color = color_map.get(value, 'white')
+                    row.append(f"[{color}]{value}[/{color}]")
+                table.add_row(*row)
+        except json.JSONDecodeError:
+            console.print("[red]Error decoding auth_binaries[/red]")
+    
+    # Print the table to the console
     console.print(table)
 
 def print_totals(resp):
@@ -482,6 +527,117 @@ def list(ctx, limit, state, severity):
         resp = convert_datetime_fields(resp, datetime_fields)
         resp = flatten_entries(resp, 'details')
         column_list=['triggeredAt','state','severity', 'name', 'message', 'success', 'username', 'client_ip']
+        print_table(column_list, resp, 'resources', field_color_map, None)
+    else:
+        click.echo(click.style("no matching resources", fg='yellow', bold=True))
+
+
+# CLI:CTE  --------------------------------------------------------------------
+@cli.group()
+@click.pass_context
+def cte(ctx):
+    pass
+
+@cte.group()
+@click.pass_context
+def client(ctx):
+    pass
+
+# CLI:CTE:CLIENT:LIST
+@client.command()
+@click.option('-l', '--limit', prompt='Query limit', help='Maximum number of clients to show', default='10', envvar='CM_LIMIT')
+@click.pass_context
+def list(ctx, limit):
+    opts = dict([('limit', limit)])
+    query = build_query(opts)
+
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/transparent-encryption/clients{query}')
+    if resp['total'] > 0:
+        column_list = ["client_health_status", "name", "client_version", "os_type", "enabled_capabilities", "protection_mode", "profile_name", "client_groups", "id"]
+        field_color_map = {
+                'True': 'green',
+                'False': 'red',
+                'HEALTHY': 'green',
+                'UNREGISTERED': 'yellow'
+        }
+
+        for resource in resp['resources']:
+            client_group_list = get_client_groups(
+                host=ctx.obj['host'], 
+                jwt=ctx.obj['jwt'],
+                client_id=resource['id']
+                )
+            resource['client_groups'] = client_group_list
+        # data extraction done, now print the results
+        print_totals(resp)
+        print_table(column_list, resp, 'resources', field_color_map, None)
+    else:
+        click.echo(click.style("no matching resources", fg='yellow', bold=True))
+
+# CLI:CTE:CLIENT:HEALTH
+@client.command()
+@click.option('-l', '--limit', prompt='Query limit', help='Maximum number of clients to show', default='10', envvar='CM_LIMIT')
+@click.pass_context
+def health(ctx, limit):
+    opts = dict([('limit', limit)])
+    query = build_query(opts)
+
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/transparent-encryption/clients{query}')
+    if resp['total'] > 0:
+        column_list = ["client_health_status", "name", "num_errors", "num_warnings", "num_gp_errors", "errors", "warnings", "gp_errors"]
+        field_color_map = {
+                'True': 'green',
+                'False': 'red',
+                'HEALTHY': 'green',
+                'UNREGISTERED': 'yellow', 
+                'UNHEALTHY': 'red',
+                'OFFLINE': 'red'
+        }
+
+        # data extraction done, now print the results
+        print_totals(resp)
+        print_table(column_list, resp, 'resources', field_color_map, None)
+    else:
+        click.echo(click.style("no matching resources", fg='yellow', bold=True))
+
+# CLI:CTE:CLIENT:AUTH
+@client.command()
+@click.option('-c', '--client', prompt='Client name', help='client name or identifier', required=True)
+@click.pass_context
+def auth(ctx, client):
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/transparent-encryption/clients/{client}')
+    column_list = ["privilege", "filename"]
+    field_color_map = {
+            'True': 'green',
+            'False': 'red',
+            'lock': 'red',
+            'exempt': 'yellow',
+            'authenticator': 'cyan',
+            'authenticator_euid': 'magenta'
+    }
+    print_binaries_table(resp, column_list, field_color_map)
+
+
+# CLI:CTE:GUARDPOINTS
+@cte.command()
+@click.option('-c', '--client', prompt='Client name', help='client name or identifier', required=True)
+@click.option('-l', '--limit', prompt='Query limit', help='Maximum number of clients to show', default='10', envvar='CM_LIMIT')
+@click.pass_context
+def guardpoints(ctx, client, limit):
+    opts = dict([('limit', limit)])
+    query = build_query(opts)
+
+    resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/transparent-encryption/clients/{client}/guardpoints{query}')
+    if resp['total'] > 0:
+        column_list = ["guard_enabled", "guard_point_state", "guard_path", "policy_name", "guard_point_type", "automount_enabled", "cifs_enabled", "mfa_enabled", "early_access"]
+        field_color_map = {
+                'True': 'green',
+                'False': 'red'
+        }
+
+        # data extraction done, now print the results
+        click.echo(click.style(f"Guardpoints on {client}", fg='yellow', bold=True))
+        print_totals(resp)
         print_table(column_list, resp, 'resources', field_color_map, None)
     else:
         click.echo(click.style("no matching resources", fg='yellow', bold=True))
