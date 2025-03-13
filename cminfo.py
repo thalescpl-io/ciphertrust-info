@@ -1,333 +1,34 @@
 import click
-import datetime
-import getpass
-import json
-import requests
-import sys
-import urllib3
+from ciphertrust import authenticate
+from ciphertrust import api_get_noauth
+from ciphertrust import api_get
+from ciphertrust import filter_by_date
+from ciphertrust import flatten_entries
+from ciphertrust import get_ca_subject
+from ciphertrust import get_client_groups
+from ciphertrust import print_totals
+from ciphertrust import sort_response_keys
 from dotenv import load_dotenv
-from pathlib import Path
-from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
+from getpass import getpass
 from rich.table import Table
 from rich.console import Console
 from rich.text import Text
 from rich import print
-from tqdm import tqdm  # for file download progress bar
-from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
+from sys import exit
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning, MaxRetryError, NewConnectionError, SSLError
+from utils import build_query
+from utils import download_file
+from utils import process_datetime_fields
+from utils import shorten_id
+from utils import yes_no_input
 
 
 # GLOBALS  --------------------------------------------------------------------
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-VERSION = '1.8.0'
+disable_warnings(InsecureRequestWarning)
+VERSION = '2.0.0'
 
 # FUNCTIONS  ------------------------------------------------------------------
-import requests
-import json
-import click
-import sys
-from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
-from urllib3.exceptions import NewConnectionError, MaxRetryError, SSLError
-
-def authenticate(host, username, password, domain, authdomain):
-    """
-    Authenticate the user using the provided credentials and returns a jwt token
-
-    Parameters:
-    host (str): The host URL
-    username (str): The username
-    password (str): The password
-    domain (str): The domain
-    authdomain (str): The authentication domain
-
-    Returns:
-    str: The jwt token if authentication is successful, None otherwise
-    """
-    
-    url = f"https://{host}/api/v1/auth/tokens"
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "grant_type": "password",
-        "username": username,
-        "password": password,
-        "domain": domain,
-        "auth_domain": authdomain
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, data=json.dumps(data), verify=False)
-        response.raise_for_status()
-        
-        if response.status_code == 200:
-            click.echo(click.style(f"Connected: {authdomain}|{username} @ {host}\\{domain}" , fg='green', bold=True))
-            print('\n')
-            return response.json().get('jwt')
-        else:
-            click.echo(click.style("Failed to authenticate\n" , fg='red', bold=True))
-            print(response.status_code)
-            return None
-    except HTTPError as http_err:
-        click.echo(click.style(f"HTTP error occurred:\n{http_err}\n", fg='red', bold=True))
-    except ConnectionError as conn_err:
-        click.echo(click.style(f"Connection error occurred:\n{conn_err}\n", fg='red', bold=True))
-    except Timeout as timeout_err:
-        click.echo(click.style(f"Timeout error occurred:\n{timeout_err}\n", fg='red', bold=True))
-    except NewConnectionError as new_conn_err:
-        click.echo(click.style(f"New connection error occurred:\n{new_conn_err}\n", fg='red', bold=True))
-    except MaxRetryError as max_retry_err:
-        click.echo(click.style(f"Max retry error occurred:\n{max_retry_err}\n", fg='red', bold=True))
-    except SSLError as ssl_err:
-        click.echo(click.style(f"SSL error occurred:\n{ssl_err}\n", fg='red', bold=True))
-    except RequestException as req_err:
-        click.echo(click.style(f"Request exception occurred:\n{req_err}\n", fg='red', bold=True))
-    except Exception as ex:
-        click.echo(click.style(f"An unexpected error occurred:\n{ex}\n", fg='red', bold=True))
-    
-    return None
-
-    # authenticate
-
-def api_get_noauth(host, api):
-    """
-    Sends a GET request to the specified API and returns the response data
-
-    Parameters:
-    host (str): The host URL
-    api (str): The endpoint of the API
-
-    Returns:
-    dict: The response data if the request is successful, None otherwise
-    """
-
-    url = f"https://{host}/api/{api}"
-    response = requests.get(url, verify=False)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print("Failed to get data from API")
-        print(response.status_code)
-        return None
-    # api_get_noauth
-
-def api_get(host, api, jwt):
-    """
-    This function sends a GET request to a specified API and returns the response.
-
-    Parameters:
-    host (str): The host of the API.
-    api (str): The endpoint of the API.
-    jwt (str): The JSON Web Token for authentication.
-
-    Returns:
-    dict or None: If the GET request is successful, it returns the JSON response as a dictionary. If the request fails, it prints an error message and returns None.
-    """
-    url = f"https://{host}/api{api}"
-    headers = {'Authorization': f'Bearer {jwt}'}
-    response = requests.get(url, headers=headers, verify=False)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print("Failed to get data from API")
-        print(response.status_code)
-        return None
-    # api_get
-
-def build_query(opts):
-    # Ex. form: ?limit=10&algorithm=AES
-    s = ""
-    for k, v in opts.items():
-        if v is not None:
-            s = s + f"&{k}={v}"
-    # now replace first & with ? to append to url
-    s= '?' + s[1:]
-    return s
-
-def convert_datetime_fields(data, datetime_fields):
-    for resource in data.get('resources', []):  # TODO: parameterize collection field
-        for field in datetime_fields:
-            if field in resource and resource[field] is not None:
-                dt = datetime.datetime.fromisoformat(resource[field].replace("Z", "+00:00"))
-                resource[field] = dt.strftime("%Y-%m-%d %H:%M")
-    return data
-
-def download_file(url, location):
-    """
-    This function downloads a file from a given URL and saves it to a specified location.
-
-    Parameters:
-    url (str): The URL of the file to download.
-    location (str): The path where the downloaded file should be saved.
-
-    Returns:
-    None. The function prints a success message if the file is downloaded successfully. If an error occurs during the download, the function prints an error message.
-
-    Raises:
-    requests.exceptions.HTTPError: If an HTTP error occurs.
-    requests.exceptions.ConnectionError: If a connection error occurs.
-    requests.exceptions.Timeout: If a timeout error occurs.
-    requests.exceptions.RequestException: If a request error occurs.
-    Exception: If any other error occurs.
-    """
-    try:
-        response = requests.get(url, stream=True, verify=False)
-        response.raise_for_status()  # Ensure we got a valid response.
-
-        total_size = int(response.headers.get('content-length', 0))
-        block_size = 1024
-        t=tqdm(total=total_size, unit='iB', unit_scale=True)
-
-        with open(location, 'wb') as output_file:
-            for chunk in response.iter_content(chunk_size=8192):
-                t.update(len(chunk))
-                output_file.write(chunk)
-        t.close()
-
-        print(f"File downloaded successfully at {location}")
-
-    except requests.exceptions.HTTPError as errh:
-        print ("Http Error:",errh)
-    except requests.exceptions.ConnectionError as errc:
-        print ("Error Connecting:",errc)
-    except requests.exceptions.Timeout as errt:
-        print ("Timeout Error:",errt)
-    except requests.exceptions.RequestException as err:
-        print ("Something went wrong",err)
-    except Exception as e:
-        print("An error occured", e)
-
-def filter_by_date(response, days):
-    """
-    Filters resources in the response based on a date threshold.
-
-    Parameters:
-    response (dict): The dictionary containing resources to filter.
-    days (int): The number of days to use as a threshold for filtering.
-
-    Returns:
-    dict: A new dictionary containing only the resources that meet the date criteria.
-    """
-    # Calculate the target date by subtracting 'days' from the current date
-    target_date = datetime.datetime.now() - datetime.timedelta(days=days)
-    click.echo(click.style(f"Inactive since: {target_date.strftime("%Y-%m-%d %H:%M")}:", fg='yellow', bold=True))
-    filtered_resources = []
-    
-    for resource in response.get('resources', []):
-        last_login_str = resource.get('last_login')
-        if last_login_str is None:
-            # If last_login is None, include the resource
-            filtered_resources.append(resource)
-        else:
-            try:
-                last_login = datetime.datetime.strptime(last_login_str, "%Y-%m-%d %H:%M")
-                # Check if last_login is outside the target date range
-                if last_login <= target_date:
-                    filtered_resources.append(resource)
-            except ValueError as e:
-                print(f"Error parsing date: {e} for resource: {resource}")
-    
-    # Create a new response object with the filtered resources and maintain the original structure
-    new_response = response.copy()
-    new_response['resources'] = filtered_resources
-    new_response['total'] = len(new_response['resources'])
-    return new_response
-
-def flatten_entries(data, subfield):
-    """
-    This function flattens the nested 'details' dictionaries in the 'resources' list of the input data dictionary.
-    
-    Parameters:
-    data (dict): The input data dictionary. It should contain a <subfield> key with a list of dictionaries. Each dictionary in the <subfield> list can optionally contain a 'details' key with a nested dictionary.
-    subfield (str): The string name of a sub data element. 
-    Returns:
-    dict: A copy of the input data dictionary, but with the 'details' dictionaries in the 'resources' list flattened. If a 'details' dictionary contains a key that already exists in the parent dictionary, the key-value pair from the 'details' dictionary is ignored.
-    """    
-    flattened_data = data.copy()  # Start with a copy of the data
-    flattened_resources = []
-    for resource in data.get('resources', []):
-        flattened_resource = resource.copy()  # Start with a copy of the resource
-        details = flattened_resource.pop(subfield, {})  # Remove 'details' from the resource
-        for key, value in details.items():
-            if key not in flattened_resource:  # Only add detail if the key doesn't conflict
-                flattened_resource[key] = value
-        flattened_resources.append(flattened_resource)
-    flattened_data['resources'] = flattened_resources  # Replace 'resources' in the data with the flattened resources
-    return flattened_data
-
-# def fill_empty_response(r):
-#     empty = json.loads('{"skip":0,"limit":0,"total":0,"resources":[{"id":null,"uri":null,"createdAt":null,"name":null,"updatedAt":null,"activationDate":null,"deactivationDate":null,"state":null,"usage":null,"usageMask":12,"meta":null,"objectType":null,"aliases":[],"sha1Fingerprint":null,"sha256Fingerprint":null,"defaultIV":null,"version":null,"algorithm":null,"size":null,"unexportable":null,"undeletable":null,"neverExported":null,"neverExportable":null,"emptyMaterial":null,"uuid":null,"muid":null,"keyCheckValue":null}]}')
-#     if r['resources'] is None:
-#         return empty
-#     else:
-#         return r
-
-def get_ca_subject(host, jwt, id, type='local'):
-    if type == 'local':
-        api = f'/v1/ca/local-cas/{id}'
-    if type == 'external':
-        api = f'/v1/ca/external-cas/{id}'
-    url = f"https://{host}/api{api}"
-    headers = {'Authorization': f'Bearer {jwt}'}
-    response = requests.get(url, headers=headers, verify=False)
-    if response.status_code == 200:
-        return str(response.json().get('subject'))
-    else:
-        click.echo(click.style("Failed to get certificate authority subject\n" , fg='yellow', bold=True))
-        click.echo(click.style(f"{response.status_code}\n" , fg='yellow', bold=True))
-        return None
-    # get_ca_name
-
-def get_client_groups(host, jwt, client_id):
-    member_of = []
-    api = f"/v1/transparent-encryption/clients/{client_id}/clientgroups"
-
-    resp = api_get(host, api, jwt)
-    if resp['total'] > 0:
-        for resource in resp['resources']:
-            member_of.append(resource['name'])
-    return member_of
-
-def get_resource_limit(host, api, jwt):
-    url = f"https://{host}/api{api}"
-    headers = {'Authorization': f'Bearer {jwt}'}
-    response = requests.get(url, headers=headers, verify=False)
-    if response.status_code == 200:
-        return str(response.json().get('total'))
-    else:
-        print("Failed to get data from API")
-        print(response.status_code)
-        return None
-    # get_resource_limit
-
-def iso_to_local(iso: str) -> str:
-    """
-    Converts an ISO 8601 formatted datetime string to a local datetime string in the format "%Y-%m-%d %H:%M".
-
-    Parameters:
-    iso (str): An ISO 8601 formatted datetime string.
-
-    Returns:
-    str: A datetime string in the format "%Y-%m-%d %H:%M".
-    """    
-    iso = iso.replace("Z", "")
-    dt = datetime.fromisoformat(iso)
-    return dt.strftime("%Y-%m-%d %H:%M")
-
-def page_response(resp):
-    skip = resp['skip']
-    limit = resp['limit']
-    total = resp['total']
-
-    while total is None or skip < total:
-        #resp = get_data(skip=skip, limit=limit)
-        if total is None:
-            total = resp['total']
-
-        for resource in resp['resources']:
-            print(resource)
-
-        # increment skip by limit for the next page
-        skip += limit
-
 def print_table(column_list, resp, key_field=None, field_color_map=None, column_color_map=None):
     """
     This function prints a table of data with colored fields to the console.
@@ -384,24 +85,36 @@ def print_table(column_list, resp, key_field=None, field_color_map=None, column_
     console.print(table)
 
 def print_binaries_table(response_data, column_list, color_map):
+    """
+    Prints a table of authorization binaries with colored fields to the console.
+
+    Parameters:
+    response_data (dict): A dictionary containing the response data with an 'auth_binaries' field.
+    column_list (list): A list of column names to be included in the table.
+    color_map (dict): A dictionary mapping field values to colors. If a field value matches a key in color_map, it is printed in the corresponding color.
+
+    Raises:
+    ValueError: If the response_data does not contain an 'auth_binaries' field or is not a dictionary.
+
+    Outputs:
+    This function does not return any value. It prints the data to the console in a table format with colored fields.
+
+    The function processes the 'auth_binaries' field in the response_data, which is expected to be a JSON string representing a list of dictionaries. 
+    It parses this JSON string and adds each item to the table, coloring the fields according to the provided color_map. 
+    If there is an error decoding the JSON string, it prints an error message to the console.
+    """
     # Ensure the response structure is correct
     if not isinstance(response_data, dict) or 'auth_binaries' not in response_data:
         raise ValueError("Response object must contain an 'auth_binaries' field.")
     
-    # Create a Console object to print the table
     console = Console()
-
-    # Create a Table object
     table = Table(show_header=True, header_style="bold magenta")
 
-    # Add columns based on column_list
     for column in column_list:
         table.add_column(column)
     
-    # Process the auth_binaries field
     auth_binaries = response_data.get('auth_binaries', '')
     if auth_binaries:
-        # Parse the auth_binaries JSON string into a list of dictionaries
         try:
             auth_binaries_data = json.loads(auth_binaries)
             for item in auth_binaries_data:
@@ -413,49 +126,7 @@ def print_binaries_table(response_data, column_list, color_map):
                 table.add_row(*row)
         except json.JSONDecodeError:
             console.print("[red]Error decoding auth_binaries[/red]")
-    
-    # Print the table to the console
     console.print(table)
-
-def print_totals(resp):
-    if resp['limit'] <= resp['total']:
-        print(f"Showing {resp['limit']} of {resp['total']}")
-    else:
-        print(f"Showing {resp['total']} of {resp['total']}")
-
-def shorten_id(id_string, stub):
-    if len(id_string) > 10:
-        shortened = id_string[:stub] + '...' + id_string[-stub:]
-        return shortened
-    else:
-        return id_string
-
-def sort_response_keys(resp, collection, sort_field):
-    if collection is None:
-        return resp
-    else:
-        resp[collection] = sorted(resp[collection], key=lambda x: x[sort_field])
-        return resp
-
-def yes_no_input(prompt):
-    """
-    Prompts the user for a yes/no response and returns a boolean.
-
-    Args:
-        prompt: The prompt to display to the user.
-
-    Returns:
-        True if the user enters yes/y, False if no/n.
-        Repeats the prompt if the input is invalid.
-    """
-    while True:
-        user_input = input(f"{prompt} (yes/no or y/n): ").lower()
-        if user_input in ("yes", "y"):
-            return True
-        elif user_input in ("no", "n"):
-            return False
-        else:
-            print("Invalid input. Please enter yes, no, y, or n.")
 
 
 # CLI  ------------------------------------------------------------------------
@@ -482,13 +153,13 @@ def cli(ctx, host, username, password, domain, authdomain, debug):
         if again:
             host = input("Host: ")
             username = input("User: ")
-            password =  getpass.getpass("Password (hidden): ")
+            password =  getpass("Password (hidden): ")
             domain = input("Domain: ")
             authdomain = input("Auth Domain: ")
             ctx.obj['jwt'] = authenticate(host, username, password, domain, authdomain)
         else:
             click.echo(click.style("Exiting...\n" , fg='red', bold=True))
-            sys.exit(0)
+            exit(0)
 
     if debug:
         click.echo(click.style(f"AUTH JWT: {ctx.obj['jwt']}\n" , fg='yellow', bold=True))
@@ -524,7 +195,7 @@ def list(ctx, limit, state, severity):
             'False': 'red'
         }
         datetime_fields = ["triggeredAt"]
-        resp = convert_datetime_fields(resp, datetime_fields)
+        resp = process_datetime_fields(data=resp, collection_field='resources', datetime_fields=datetime_fields)
         resp = flatten_entries(resp, 'details')
         column_list=['triggeredAt','state','severity', 'name', 'message', 'success', 'username', 'client_ip']
         print_table(column_list, resp, 'resources', field_color_map, None)
@@ -834,7 +505,7 @@ def dates(ctx, limit, state, type):
         print_totals(resp)
 
         datetime_fields = ["createdAt", "updatedAt", "activationDate", "deactivationDate", "compromiseDate"]
-        resp = convert_datetime_fields(resp, datetime_fields)
+        resp = process_datetime_fields(data=resp, collection_field='resources', datetime_fields=datetime_fields)
 
         column_list = ["name", "version", "createdAt", "updatedAt", "activationDate", "deactivationDate", "compromiseDate"]
 
@@ -963,7 +634,7 @@ def inactive(ctx, limit, days):
 
     resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/usermgmt/users{query}')
     datetime_fields = ["created_at", "updated_at", "last_login", "last_failed_login_at", "password_changed_at"]
-    resp = convert_datetime_fields(resp, datetime_fields)
+    resp = process_datetime_fields(data=resp, collection_field='resources', datetime_fields=datetime_fields)
     resp = filter_by_date(resp, int(days))
     print_totals(resp)
     
@@ -986,7 +657,7 @@ def logins(ctx, limit):
     print_totals(resp)
 
     datetime_fields = ["created_at", "updated_at", "last_login", "last_failed_login_at", "password_changed_at"]
-    resp = convert_datetime_fields(resp, datetime_fields)
+    resp = process_datetime_fields(data=resp, collection_field='resources', datetime_fields=datetime_fields)
 
     column_list = ["name", "user_id", "logins_count", "failed_logins_count", "last_login", "last_failed_login_at", "password_changed_at"]
     column_color_map = {
@@ -1011,7 +682,6 @@ def list(ctx, limit, sort):
     query = build_query(opts)
 
     resp = api_get(host=ctx.obj['host'], jwt=ctx.obj['jwt'], api=f'/v1/scheduler/job-configs{query}')
-    # resp = flatten_entries(resp, 'job_config_params')
 
     if resp['total'] > 0:
         print_totals(resp)
