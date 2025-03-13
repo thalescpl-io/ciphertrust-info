@@ -1,4 +1,5 @@
 import click
+import json
 from ciphertrust import authenticate
 from ciphertrust import api_get_noauth
 from ciphertrust import api_get
@@ -26,7 +27,7 @@ from utils import yes_no_input
 
 # GLOBALS  --------------------------------------------------------------------
 disable_warnings(InsecureRequestWarning)
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 # FUNCTIONS  ------------------------------------------------------------------
 def print_table(column_list, resp, key_field=None, field_color_map=None, column_color_map=None):
